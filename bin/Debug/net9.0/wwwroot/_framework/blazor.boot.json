@@ -1,7 +1,7 @@
 {
   "mainAssemblyName": "FileRenamerProject",
   "resources": {
-    "hash": "sha256-vo+7J13M7kCNTArJH9bFBtz8oaBHR3rZqUok0+2EsYY=",
+    "hash": "sha256-Y+LimJtTfvRd6YNv5nph097T+7bZYMAFMr/Gptjvo1U=",
     "fingerprinting": {
       "Humanizer.oqup3v7t3k.wasm": "Humanizer.wasm",
       "Microsoft.AspNetCore.Authorization.qe23mgxr71.wasm": "Microsoft.AspNetCore.Authorization.wasm",
@@ -294,8 +294,8 @@
       "icudt_CJK.tjcz0u77k5.dat": "icudt_CJK.dat",
       "icudt_EFIGS.tptq2av103.dat": "icudt_EFIGS.dat",
       "icudt_no_CJK.lfu7j35m59.dat": "icudt_no_CJK.dat",
-      "FileRenamerProject.l4vgyuuuhy.wasm": "FileRenamerProject.wasm",
-      "FileRenamerProject.8ga0f4a13k.pdb": "FileRenamerProject.pdb"
+      "FileRenamerProject.25wfbzcqrn.wasm": "FileRenamerProject.wasm",
+      "FileRenamerProject.itm2gddcnp.pdb": "FileRenamerProject.pdb"
     },
     "jsModuleNative": {
       "dotnet.native.hmanx9razn.js": "sha256-d7UNSArplVrX3arY2Kmhxp1wN79ng8hLqIBrkiQ9Gbo="
@@ -533,10 +533,10 @@
       "WindowsBase.377bly7twj.wasm": "sha256-0VmBdMjdc0nZGHDSfaGirT6y3mJTM0qx8eqCUC/rpiE=",
       "mscorlib.o0184ey5ia.wasm": "sha256-2GxNKZQJVJvYMUxSTuXa5V2qxawSMMHZtwG33SKVCZU=",
       "netstandard.hb3h2rr8mk.wasm": "sha256-DWn9+RH/ElZQ6imlYqVwZvir1KTzNwY18AzGmnyiymU=",
-      "FileRenamerProject.l4vgyuuuhy.wasm": "sha256-lfuq9qsT49dnFIgvSxyR9rmN9tg0QopnBiUXsRBEIvE="
+      "FileRenamerProject.25wfbzcqrn.wasm": "sha256-dud3hZgh7/5GZlsiuvYAe1t8e9yf5UYhAZVcIlS/1Rg="
     },
     "pdb": {
-      "FileRenamerProject.8ga0f4a13k.pdb": "sha256-GOzsVo3PH0+KK3bn8DpUDxpvE+5bfkHQ1S3q2mIS/Hs="
+      "FileRenamerProject.itm2gddcnp.pdb": "sha256-BhRwkgqDinsKuw1GXisFgNyEtlib4CW4GaqpTJIidTg="
     },
     "satelliteResources": {
       "cs": {
