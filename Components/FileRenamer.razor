@@ -1,0 +1,98 @@
+@inject IJSRuntime JSRuntime
+@using FileRenamerProject.Data
+@using FileRenamerProject.Layout
+@using Microsoft.EntityFrameworkCore
+@inject FileDbContext DbContext
+@inherits LayoutComponentBase
+
+@using System.IO
+
+@page "/"
+
+<div class="file-renamer-container">
+    <h1 class="title">PDF File Renamer</h1>
+
+    <div class="controls">
+        <label for="filePicker">Select PDF Files:</label>
+        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" />
+        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any())">Process Files</button>
+    </div>
+
+    <div class="file-table" hidden="@(!Files.Any())">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>File Name</th>
+                    <th>Path</th>
+                    <th>Suggested Name</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var file in Files)
+                {
+                    <tr>
+                        <td>@file.Id</td>
+                        <td>@file.FileName</td>
+                        <td>@file.FilePath</td>
+                        <td>@file.SuggestedName</td>
+                        <td>@file.Status</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+private List<FileRecord> Files = new();
+
+    private async Task OnFilesSelected(ChangeEventArgs e)
+    {
+        Files.Clear();
+        var files = await JSRuntime.InvokeAsync<string[]>("getPDFsFromFilePicker");
+        foreach (var filePath in files)
+        {
+            Files.Add(new FileRecord
+                {
+                    FileName = Path.GetFileName(filePath),
+                    FilePath = filePath,
+                    SuggestedName = "",
+                    Status = "Pending"
+                });
+        }
+    }
+
+
+    private async Task ProcessFiles()
+    {
+        foreach (var file in Files)
+        {
+            file.Status = "Processing";
+            StateHasChanged();
+            var content = await ReadPdfContent(file.FilePath);
+            var suggestedName = await GetSuggestedNameFromAI(file.FileName, content);
+            file.SuggestedName = suggestedName;
+            file.Status = "Completed";
+            using (var dbContext = new FileDbContext())
+            {
+                dbContext.Files.Add(file);
+                await dbContext.SaveChangesAsync();
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task<string> ReadPdfContent(string filePath)
+    {
+        return $"Sample content of {filePath}";
+    }
+
+    private async Task<string> GetSuggestedNameFromAI(string fileName, string content)
+    {
+        return await Task.FromResult($"Suggested_{fileName}");
+    }
+
+
+}
