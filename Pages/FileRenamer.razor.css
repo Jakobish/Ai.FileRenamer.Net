@@ -1,106 +1,150 @@
-.file-renamer-container {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-}
+    .file-renamer-container {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
 
-.title {
-    color: #333;
-    margin-bottom: 30px;
-}
+    .title {
+        color: var(--mud-palette-primary);
+        margin-bottom: 2rem;
+    }
 
-.controls {
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
+    .controls {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
 
-.scan-button {
-    padding: 8px 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
+    .scan-button {
+        background-color: var(--mud-palette-primary);
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-.scan-button:disabled {
-    background-color: #ccc;
-    cursor: not-allowed;
-}
+    .scan-button:disabled {
+        background-color: var(--mud-palette-action-disabled);
+        cursor: not-allowed;
+    }
 
-.cancel-button {
-    padding: 8px 16px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
+    .cancel-button {
+        background-color: var(--mud-palette-error);
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-.rename-button {
-    padding: 4px 8px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
+    .alert {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
 
-.file-table {
-    margin-top: 20px;
-    overflow-x: auto;
-}
+    .alert-danger {
+        background-color: var(--mud-palette-error-light);
+        color: var(--mud-palette-error);
+        border: 1px solid var(--mud-palette-error);
+    }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
+    .close-button {
+        background: none;
+        border: none;
+        color: inherit;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0 0.5rem;
+    }
 
-th, td {
-    padding: 12px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
+    .file-table {
+        width: 100%;
+        overflow-x: auto;
+    }
 
-th {
-    background-color: #f8f9fa;
-}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+    }
 
-.alert {
-    padding: 12px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+    th, td {
+        padding: 0.75rem;
+        text-align: left;
+        border-bottom: 1px solid var(--mud-palette-lines-default);
+    }
 
-.alert-danger {
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    color: #721c24;
-}
+    th {
+        background-color: var(--mud-palette-surface);
+        font-weight: 600;
+    }
 
-.close-button {
-    background: none;
-    border: none;
-    font-size: 20px;
-    cursor: pointer;
-    color: inherit;
-}
+    .rename-button {
+        background-color: var(--mud-palette-success);
+        color: white;
+        padding: 4px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
 
-.spinner {
-    width: 20px;
-    height: 20px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #3498db;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
+    .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid var(--mud-palette-primary);
+        border-top: 2px solid transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .progress-container {
+        margin: 1rem 0;
+        padding: 1rem;
+        background-color: var(--mud-palette-surface);
+        border-radius: 4px;
+        border: 1px solid var(--mud-palette-lines-default);
+    }
+
+    .progress-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: var(--mud-palette-text-primary);
+    }
+
+    .progress-bar-container {
+        width: 100%;
+        height: 8px;
+        background-color: var(--mud-palette-background);
+        border-radius: 4px;
+        overflow: hidden;
+        margin: 0.5rem 0;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: var(--mud-palette-primary);
+        transition: width 0.3s ease-in-out;
+    }
+
+    .batch-progress {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .batch-progress .progress-bar {
+        background-color: var(--mud-palette-secondary);
+    }
+

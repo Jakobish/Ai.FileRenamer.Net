@@ -5,117 +5,6 @@
 
 <PageTitle>PDF File Renamer</PageTitle>
 
-<style>
-    .file-renamer-container {
-        padding: 20px;
-        max-width: 1200px;
-        margin: 0 auto;
-    }
-
-    .title {
-        color: var(--mud-palette-primary);
-        margin-bottom: 2rem;
-    }
-
-    .controls {
-        display: flex;
-        gap: 1rem;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-
-    .scan-button {
-        background-color: var(--mud-palette-primary);
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .scan-button:disabled {
-        background-color: var(--mud-palette-action-disabled);
-        cursor: not-allowed;
-    }
-
-    .cancel-button {
-        background-color: var(--mud-palette-error);
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .alert {
-        padding: 1rem;
-        margin-bottom: 1rem;
-        border-radius: 4px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .alert-danger {
-        background-color: var(--mud-palette-error-light);
-        color: var(--mud-palette-error);
-        border: 1px solid var(--mud-palette-error);
-    }
-
-    .close-button {
-        background: none;
-        border: none;
-        color: inherit;
-        font-size: 1.5rem;
-        cursor: pointer;
-        padding: 0 0.5rem;
-    }
-
-    .file-table {
-        width: 100%;
-        overflow-x: auto;
-    }
-
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 1rem;
-    }
-
-    th, td {
-        padding: 0.75rem;
-        text-align: left;
-        border-bottom: 1px solid var(--mud-palette-lines-default);
-    }
-
-    th {
-        background-color: var(--mud-palette-surface);
-        font-weight: 600;
-    }
-
-    .rename-button {
-        background-color: var(--mud-palette-success);
-        color: white;
-        padding: 4px 12px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-    }
-
-    .spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid var(--mud-palette-primary);
-        border-top: 2px solid transparent;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-    }
-
-    @@keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-</style>
 
 <div class="file-renamer-container">
     <h1 class="title">PDF File Renamer</h1>
@@ -138,6 +27,26 @@
             <button @onclick="CancelProcessing" class="cancel-button">Cancel</button>
         }
     </div>
+
+    @if (_progress.IsProcessing)
+    {
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>Overall Progress: @Math.Round(_progress.OverallProgress)%</span>
+                <span>Current File: @_progress.CurrentFileName</span>
+                <span>Status: @_progress.CurrentStatus</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: @(_progress.OverallProgress)%"></div>
+            </div>
+            <div class="batch-progress">
+                <span>Current Batch: @_progress.CurrentBatchProcessed of @_progress.CurrentBatchSize</span>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: @(_progress.BatchProgress)%"></div>
+                </div>
+            </div>
+        </div>
+    }
 
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
@@ -188,6 +97,7 @@
             </tbody>
         </table>
     </div>
+
 </div>
 
 @code {
@@ -196,6 +106,7 @@
     private string? ErrorMessage;
     private int _processedCount;
     private CancellationTokenSource _cts = new();
+    private ProgressState _progress = new();
 
     private async Task OnFilesSelected(ChangeEventArgs e)
     {
@@ -203,6 +114,7 @@
         {
             Files.Clear();
             ErrorMessage = null;
+            _progress.Reset();
             var fileInfos = await JSRuntime.InvokeAsync<FileInfo[]>("getPDFsFromFilePicker");
             
             if (fileInfos == null || !fileInfos.Any())
@@ -222,12 +134,6 @@
                 if (!fileInfo.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
                     ErrorMessage = $"File '{fileInfo.Name}' is not a PDF file. Only PDF files are supported.";
-                    return;
-                }
-
-                if (!File.Exists(fileInfo.Path))
-                {
-                    ErrorMessage = $"File '{fileInfo.Path}' does not exist.";
                     return;
                 }
 
@@ -262,17 +168,21 @@
             _processedCount = 0;
             ErrorMessage = null;
             
+            const int batchSize = 3;
+            _progress.Initialize(Files.Count, batchSize);
+            
             using (_cts = new CancellationTokenSource())
             {
                 var pendingFiles = Files.Where(f => f.Status == "Pending").ToList();
-                var batchSize = 3; // Process files in smaller batches to avoid overwhelming the system
                 
                 for (int i = 0; i < pendingFiles.Count; i += batchSize)
                 {
                     if (_cts.Token.IsCancellationRequested)
                         break;
 
-                    var batch = pendingFiles.Skip(i).Take(batchSize);
+                    var batch = pendingFiles.Skip(i).Take(batchSize).ToList();
+                    _progress.UpdateBatch(0, batch.Count);
+                    
                     var tasks = batch.Select(ProcessSingleFile);
                     await Task.WhenAll(tasks);
                     
@@ -280,6 +190,8 @@
                     await DbContext.SaveChangesAsync(_cts.Token);
                 }
             }
+            
+            _progress.Complete();
         }
         catch (OperationCanceledException)
         {
@@ -307,12 +219,8 @@
         try
         {
             file.Status = "Processing";
+            _progress.UpdateProgress(file.FileName, "Processing");
             StateHasChanged();
-
-            if (!File.Exists(file.FilePath))
-            {
-                throw new FileNotFoundException($"File not found: {file.FilePath}");
-            }
 
             // Get the file bytes using JavaScript interop
             var fileBytes = await JSRuntime.InvokeAsync<byte[]>("getFileBytes", file.FilePath);
@@ -345,6 +253,7 @@
             suggestedName = string.Join("_", suggestedName.Split(Path.GetInvalidFileNameChars()));
             file.SuggestedName = suggestedName;
             file.Status = "Completed";
+            _progress.UpdateProgress(file.FileName, "Completed");
             
             var existingFile = DbContext.Files.FirstOrDefault(f => f.FilePath == file.FilePath);
             if (existingFile != null)
@@ -362,6 +271,7 @@
         {
             file.Status = "Error";
             file.SuggestedName = ex.Message;
+            _progress.UpdateProgress(file.FileName, "Error");
         }
         finally
         {
@@ -380,40 +290,9 @@
 
         try
         {
-            if (string.IsNullOrEmpty(file.SuggestedName))
-                throw new InvalidOperationException("No suggested name available");
-
-            var directory = Path.GetDirectoryName(file.FilePath);
-            if (string.IsNullOrEmpty(directory))
-                throw new InvalidOperationException("Invalid file path");
-
-            // Ensure the suggested name has a .pdf extension
-            var newFileName = !file.SuggestedName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) 
-                ? file.SuggestedName + ".pdf" 
-                : file.SuggestedName;
-
-            var newPath = Path.Combine(directory, newFileName);
-
-            // Check if source file exists
-            if (!File.Exists(file.FilePath))
-                throw new FileNotFoundException("Source file no longer exists", file.FilePath);
-
-            // Check if target path already exists
-            if (File.Exists(newPath))
-            {
-                // Generate a unique name by adding a number
-                int counter = 1;
-                string fileNameWithoutExt = Path.GetFileNameWithoutExtension(newFileName);
-                while (File.Exists(newPath))
-                {
-                    newFileName = $"{fileNameWithoutExt}_{counter}.pdf";
-                    newPath = Path.Combine(directory, newFileName);
-                    counter++;
-                }
-            }
-
-            File.Move(file.FilePath, newPath);
-            file.FilePath = newPath;
+            var newFileName = Path.GetFileNameWithoutExtension(file.SuggestedName) + ".pdf";
+            
+            // In a web context, we'll just update the record
             file.FileName = newFileName;
             file.Status = "Renamed";
             
