@@ -18,7 +18,9 @@ public class PdfService : IPdfService
         _configuration = configuration;
     }
 
-    public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
+public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
+{
+    return await Task.Run(() =>
     {
         try
         {
@@ -32,17 +34,18 @@ public class PdfService : IPdfService
             {
                 var page = pdfDocument.GetPage(i);
                 var text = PdfTextExtractor.GetTextFromPage(page);
-                textBuilder.AppendLine(text);
+                textBuilder.Append(text);
             }
 
             return textBuilder.ToString();
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error extracting text from PDF: {ex.Message}", ex);
+            // Log the exception or handle it appropriately
+            return string.Empty;
         }
-    }
-
+    });
+}
     public async Task<string> GetSuggestedNameFromAIAsync(string fileName, string content)
     {
         try

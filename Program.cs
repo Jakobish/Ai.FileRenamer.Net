@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using FileRenamerProject;
 using FileRenamerProject.Services;
 using FileRenamerProject.Data;
 using Microsoft.EntityFrameworkCore;
+using FileRenamerProject;
+
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
