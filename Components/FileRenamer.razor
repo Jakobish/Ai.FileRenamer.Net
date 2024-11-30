@@ -1,10 +1,11 @@
 @inject IJSRuntime JSRuntime
 @using FileRenamerProject.Data
 @using FileRenamerProject.Layout
+@using FileRenamerProject.Services
 @using Microsoft.EntityFrameworkCore
 @inject FileDbContext DbContext
+@inject IPdfService PdfService
 @inherits LayoutComponentBase
-
 @using System.IO
 
 @page "/renamer"
@@ -14,9 +15,30 @@
 
     <div class="controls">
         <label for="filePicker">Select PDF Files:</label>
-        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" />
-        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any())">Process Files</button>
+        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" disabled="@IsProcessing" />
+        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any() || IsProcessing)">
+            @if (IsProcessing)
+            {
+                <span>Processing... (@_processedCount of @Files.Count)</span>
+            }
+            else
+            {
+                <span>Process Files</span>
+            }
+        </button>
+        @if (IsProcessing)
+        {
+            <button @onclick="CancelProcessing" class="cancel-button">Cancel</button>
+        }
     </div>
+
+    @if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @ErrorMessage
+            <button @onclick="@(() => ErrorMessage = null)" class="close-button">×</button>
+        </div>
+    }
 
     <div class="file-table" hidden="@(!Files.Any())">
         <table>
@@ -27,6 +49,7 @@
                     <th>Path</th>
                     <th>Suggested Name</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,7 +60,22 @@
                         <td>@file.FileName</td>
                         <td>@file.FilePath</td>
                         <td>@file.SuggestedName</td>
-                        <td>@file.Status</td>
+                        <td>
+                            @if (file.Status == "Processing")
+                            {
+                                <div class="spinner"></div>
+                            }
+                            else
+                            {
+                                @file.Status
+                            }
+                        </td>
+                        <td>
+                            @if (file.Status == "Completed")
+                            {
+                                <button @onclick="() => ApplyRename(file)" class="rename-button">Apply</button>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>
@@ -46,53 +84,144 @@
 </div>
 
 @code {
-private List<FileRecord> Files = new();
+    private List<FileRecord> Files = new();
+    private bool IsProcessing;
+    private string ErrorMessage;
+    private int _processedCount;
+    private CancellationTokenSource _cts = new();
 
     private async Task OnFilesSelected(ChangeEventArgs e)
     {
-        Files.Clear();
-        var files = await JSRuntime.InvokeAsync<string[]>("getPDFsFromFilePicker");
-        foreach (var filePath in files)
+        try
         {
-            Files.Add(new FileRecord
+            Files.Clear();
+            var fileInfos = await JSRuntime.InvokeAsync<FileInfo[]>("getPDFsFromFilePicker");
+            
+            foreach (var fileInfo in fileInfos)
+            {
+                if (!fileInfo.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
-                    FileName = Path.GetFileName(filePath),
-                    FilePath = filePath,
+                    ErrorMessage = "Only PDF files are supported.";
+                    return;
+                }
+
+                Files.Add(new FileRecord
+                {
+                    FileName = fileInfo.Name,
+                    FilePath = fileInfo.Path,
                     SuggestedName = "",
                     Status = "Pending"
                 });
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error selecting files: {ex.Message}";
         }
     }
-
 
     private async Task ProcessFiles()
     {
-        foreach (var file in Files)
+        try
+        {
+            IsProcessing = true;
+            _processedCount = 0;
+            _cts = new CancellationTokenSource();
+
+            var tasks = Files
+                .Where(f => f.Status == "Pending")
+                .Select(ProcessSingleFile);
+
+            await Task.WhenAll(tasks);
+            
+            // Batch save to database
+            await DbContext.SaveChangesAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            ErrorMessage = "Operation was cancelled.";
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error processing files: {ex.Message}";
+        }
+        finally
+        {
+            IsProcessing = false;
+            _cts.Dispose();
+        }
+    }
+
+    private async Task ProcessSingleFile(FileRecord file)
+    {
+        try
         {
             file.Status = "Processing";
             StateHasChanged();
-            var content = await ReadPdfContent(file.FilePath);
-            var suggestedName = await GetSuggestedNameFromAI(file.FileName, content);
+
+            // Get the file bytes using JavaScript interop
+            var fileBytes = await JSRuntime.InvokeAsync<byte[]>("getFileBytes", file.FilePath);
+            _cts.Token.ThrowIfCancellationRequested();
+
+            // Extract text from PDF
+            var content = await PdfService.ExtractTextFromPdfAsync(fileBytes);
+            _cts.Token.ThrowIfCancellationRequested();
+
+            // Get AI suggestion
+            var suggestedName = await PdfService.GetSuggestedNameFromAIAsync(file.FileName, content);
+            _cts.Token.ThrowIfCancellationRequested();
+
             file.SuggestedName = suggestedName;
             file.Status = "Completed";
-            using (var dbContext = new FileDbContext())
-            {
-                dbContext.Files.Add(file);
-                await dbContext.SaveChangesAsync();
-            }
+            
+            DbContext.Files.Add(file);
+            _processedCount++;
+        }
+        catch (Exception ex)
+        {
+            file.Status = "Error";
+            file.SuggestedName = ex.Message;
+        }
+        finally
+        {
             StateHasChanged();
         }
     }
 
-    private async Task<string> ReadPdfContent(string filePath)
+    private void CancelProcessing()
     {
-        return $"Sample content of {filePath}";
+        _cts.Cancel();
     }
 
-    private async Task<string> GetSuggestedNameFromAI(string fileName, string content)
+    private async Task ApplyRename(FileRecord file)
     {
-        return await Task.FromResult($"Suggested_{fileName}");
+        try
+        {
+            if (string.IsNullOrEmpty(file.SuggestedName))
+                throw new InvalidOperationException("No suggested name available");
+
+            var directory = Path.GetDirectoryName(file.FilePath);
+            var newPath = Path.Combine(directory, file.SuggestedName + ".pdf");
+
+            if (File.Exists(newPath))
+                throw new InvalidOperationException("A file with this name already exists");
+
+            File.Move(file.FilePath, newPath);
+            file.FilePath = newPath;
+            file.FileName = file.SuggestedName + ".pdf";
+            file.Status = "Renamed";
+            
+            await DbContext.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error renaming file: {ex.Message}";
+        }
     }
 
-
+    private class FileInfo
+    {
+        public string Name { get; set; } = "";
+        public string Path { get; set; } = "";
+    }
 }
