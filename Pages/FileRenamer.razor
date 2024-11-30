@@ -279,9 +279,10 @@
         }
     }
 
-    private async Task CancelProcessing()
+    private Task CancelProcessing()
     {
         _cts.Cancel();
+        return Task.CompletedTask;
     }
 
     private async Task ApplyRename(FileRecord file)
