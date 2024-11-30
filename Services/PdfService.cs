@@ -20,31 +20,28 @@ public class PdfService : IPdfService
 
 public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
 {
-    return await Task.Run(() =>
+    try
     {
-        try
+        using var stream = new MemoryStream(pdfBytes);
+        using var pdfReader = new PdfReader(stream);
+        using var pdfDocument = new PdfDocument(pdfReader);
+
+        var textBuilder = new StringBuilder();
+
+        for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
         {
-            using var stream = new MemoryStream(pdfBytes);
-            using var pdfReader = new PdfReader(stream);
-            using var pdfDocument = new PdfDocument(pdfReader);
-
-            var textBuilder = new StringBuilder();
-
-            for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
-            {
-                var page = pdfDocument.GetPage(i);
-                var text = PdfTextExtractor.GetTextFromPage(page);
-                textBuilder.Append(text);
-            }
-
-            return textBuilder.ToString();
+            var page = pdfDocument.GetPage(i);
+            var text = PdfTextExtractor.GetTextFromPage(page);
+            textBuilder.Append(text);
         }
-        catch (Exception)
-        {
-            // Log the exception or handle it appropriately
-            return string.Empty;
-        }
-    });
+
+        return textBuilder.ToString();
+    }
+    catch (Exception)
+    {
+        // Log the exception or handle it appropriately
+        return string.Empty;
+    }
 }
     public async Task<string> GetSuggestedNameFromAIAsync(string fileName, string content)
     {
@@ -83,7 +80,7 @@ public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
             var response = await _httpClient.PostAsJsonAsync(
                 "https://api.openai.com/v1/chat/completions",
                 requestData
-            ).ConfigureAwait(false);
+            );
 
             if (!response.IsSuccessStatusCode)
             {
