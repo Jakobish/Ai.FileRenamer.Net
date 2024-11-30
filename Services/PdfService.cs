@@ -1,11 +1,9 @@
 using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
-using iText.Kernel.Pdf.Canvas.Parser.Listener;
 
 namespace FileRenamerProject.Services;
 
@@ -82,14 +80,14 @@ public class PdfService : IPdfService
             var response = await _httpClient.PostAsJsonAsync(
                 "https://api.openai.com/v1/chat/completions",
                 requestData
-            );
+            ).ConfigureAwait(false);
 
             if (!response.IsSuccessStatusCode)
             {
                 throw new HttpRequestException($"OpenAI request failed: {response.StatusCode}");
             }
 
-            var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>();
+            var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>().ConfigureAwait(false);
             if (result?.Choices == null || result.Choices.Length == 0)
             {
                 throw new InvalidOperationException("No suggestion received from OpenAI");
@@ -97,20 +95,17 @@ public class PdfService : IPdfService
 
             var suggestedName = result.Choices[0].Message.Content.Trim();
 
-            // Clean up the suggested name
-            suggestedName = Regex.Replace(suggestedName, @"[^\w\d_]", "_");
+            // Clean up the suggested name using more efficient regex
+            suggestedName = Regex.Replace(suggestedName, @"[^\w\d]", "_");
             suggestedName = Regex.Replace(suggestedName, @"_+", "_");
-            suggestedName = suggestedName.TrimEnd('_');
+            suggestedName = suggestedName.Trim('_');
 
             // Remove .pdf if it was included
             suggestedName = suggestedName.Replace(".pdf", "");
 
-            if (suggestedName.Length > 50)
-            {
-                suggestedName = suggestedName.Substring(0, 50);
-            }
-
-            return suggestedName;
+            return suggestedName.Length > 50 
+                ? suggestedName[..50] 
+                : suggestedName;
         }
         catch (Exception ex)
         {
