@@ -1,6 +1,8 @@
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
 using iText.Kernel.Pdf.Canvas.Parser.Listener;
@@ -53,7 +55,7 @@ public class PdfService : IPdfService
                 throw new InvalidOperationException("OpenAI API key not configured");
             }
 
-            _httpClient.DefaultRequestHeaders.Authorization = 
+            _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
 
             // Take only the first 1000 characters of content to avoid token limits
@@ -94,15 +96,15 @@ public class PdfService : IPdfService
             }
 
             var suggestedName = result.Choices[0].Message.Content.Trim();
-            
+
             // Clean up the suggested name
             suggestedName = Regex.Replace(suggestedName, @"[^\w\d_]", "_");
             suggestedName = Regex.Replace(suggestedName, @"_+", "_");
             suggestedName = suggestedName.TrimEnd('_');
-            
+
             // Remove .pdf if it was included
             suggestedName = suggestedName.Replace(".pdf", "");
-            
+
             if (suggestedName.Length > 50)
             {
                 suggestedName = suggestedName.Substring(0, 50);
