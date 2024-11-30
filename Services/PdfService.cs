@@ -39,7 +39,7 @@ public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
 
             return textBuilder.ToString();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Log the exception or handle it appropriately
             return string.Empty;

@@ -1,4 +1,4 @@
-$@
+
 async function getPDFsFromFilePicker() {
     const inputElement = document.getElementById("filePicker");
     const files = Array.from(inputElement.files)
