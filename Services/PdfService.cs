@@ -3,8 +3,21 @@ using System.Text;
 using System.Text.RegularExpressions;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
-using OpenAI.Chat;
-using OpenAI;
+using OpenAI_API.Chat;
+using OpenAI_API.Completions;
+using OpenAI_API.Models;
+using FileRenamerProject.Data;
+using FileRenamerProject.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+using System;
+using System.Threading.Tasks;
+
+
+
+
 
 
 
@@ -108,25 +121,27 @@ public class PdfService : IPdfService
         }
     }
 
+    [Obsolete]
     private async Task<string> GetOpenAISuggestionAsync(string content, string apiKey)
     {
         try
         {
-            var api = new OpenAIClient(apiKey);
+            var api = new OpenAI_API.OpenAIAPI(apiKey);
 
-            var openAiChatCompletion = await api.ChatCompletions.GenerateAsync(
-                new ChatCompletionCreateRequest
+            var chatRequest = new ChatRequest
+            {
+                Model = "gpt-3.5-turbo",
+                Messages = new[]
                 {
-                    Model = "gpt-3.5-turbo",
-                    Messages = new[]
+                    new ChatMessage
                     {
-                        new ChatMessage
-                        {
-                            Role = ChatRole.User,
-                            Content = $"Suggest a filename for a PDF with the following content: {content}"
-                        }
+                        Role = ChatMessageRole.User,
+                        TextContent = $"Suggest a filename for a PDF with the following content: {content}"
                     }
-                });
+                }
+            };
+
+            var openAiChatCompletion = await api.Chat.CreateChatCompletion(chatRequest);
 
             return openAiChatCompletion.Choices[0].Message.Content.Trim();
         }
