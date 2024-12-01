@@ -1,0 +1,7 @@
+[*.cs]
+
+# Default severity for all analyzer diagnostics
+dotnet_analyzer_diagnostic.severity = none
+
+# CS8602: Dereference of a possibly null reference.
+dotnet_diagnostic.CS8602.severity = none

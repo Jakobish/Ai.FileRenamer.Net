@@ -11,6 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddSingleton<INameSuggestionCache, NameSuggestionCache>();
 
 // Configure in-memory database for Blazor WebAssembly
 builder.Services.AddDbContext<FileDbContext>(options =>
