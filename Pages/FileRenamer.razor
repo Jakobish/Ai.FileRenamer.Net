@@ -134,23 +134,23 @@
 
             foreach (var fileInfo in fileInfos)
             {
-                if (string.IsNullOrWhiteSpace(fileInfo.Name) || string.IsNullOrWhiteSpace(fileInfo.Path))
+                if (string.IsNullOrWhiteSpace(fileInfo.name) || string.IsNullOrWhiteSpace(fileInfo.path))
                 {
                     ErrorMessage = "Invalid file information received.";
                     return;
                 }
 
-                if (!fileInfo.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                if (!fileInfo.name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
-                    ErrorMessage = $"File '{fileInfo.Name}' is not a PDF file. Only PDF files are supported.";
+                    ErrorMessage = $"File '{fileInfo.name}' is not a PDF file. Only PDF files are supported.";
                     return;
                 }
 
                 Files.Add(new FileRecord
                 {
                     Id = Files.Count + 1,
-                    FileName = fileInfo.Name,
-                    FilePath = fileInfo.Path,
+                    FileName = fileInfo.name,
+                    FilePath = fileInfo.path,
                     SuggestedName = "",
                     Status = "Pending"
                 });
@@ -317,7 +317,7 @@
 
     private class FileInfo
     {
-        public string Name { get; set; } = "";
-        public string Path { get; set; } = "";
+        public string name { get; set; } = "";
+        public string path { get; set; } = "";
     }
 }
