@@ -3,12 +3,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
-using Microsoft.Extensions.Logging;
-using FileRenamerProject.Data;
-using FileRenamerProject.Services;
 using OpenAI.Chat;
 using OpenAI;
-using Castle.Components.DictionaryAdapter.Xml;
+
 
 
 
@@ -117,26 +114,26 @@ public class PdfService : IPdfService
         {
             var api = new OpenAIClient(apiKey);
 
-            var chatRequest = new ChatRequest
-            
-            
-            {
-                Model = "gpt-3.5-turbo",
-                Temperature = 0.7f,
-                Messages = new List<ChatMessage>
+            var openAiChatCompletion = await api.ChatCompletions.GenerateAsync(
+                new ChatCompletionCreateRequest
                 {
-                    new ChatMessage(ChatMessageRole.System, "You are a helpful assistant that suggests concise, descriptive filenames based on PDF content. The filename should be clear, professional, and follow these rules: 1. Use underscores instead of spaces 2. No special characters except underscores and hyphens 3. Maximum 50 characters 4. All lowercase 5. Must end in .pdf"),
-                    new ChatMessage(ChatMessageRole.User, $"Suggest a filename for a PDF with the following content: {content}")
-                }
-            };
+                    Model = "gpt-3.5-turbo",
+                    Messages = new[]
+                    {
+                        new ChatMessage
+                        {
+                            Role = ChatRole.User,
+                            Content = $"Suggest a filename for a PDF with the following content: {content}"
+                        }
+                    }
+                });
 
-            var chatCompletion = await api.ChatCompletions.CreateAsync(chatRequest);
-            return chatCompletion.Choices[0].Message.Content.Trim();
+            return openAiChatCompletion.Choices[0].Message.Content.Trim();
         }
         catch (Exception ex)
         {
             _logger.LogError($"OpenAI API call failed: {ex.Message}");
-            throw;
+            return string.Empty;
         }
     }
 
