@@ -106,22 +106,49 @@ public class PdfService : IPdfService
             var apiKey = _configuration[$"{aiProvider}:ApiKey"] ?? throw new InvalidOperationException($"{aiProvider} API key not found");
 
             string suggestion;
-            if (aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
-            {
-                suggestion = await GetOpenAISuggestionAsync(content, apiKey);
-            }
-            else if (aiProvider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
-            {
-                suggestion = await GetGeminiSuggestionAsync(content, apiKey);
-            }
-            else
-            {
-                throw new InvalidOperationException($"Unsupported AI provider: {aiProvider}");
-            }
+            Exception lastException = null;
 
-            // Cache the suggestion
-            _cache.CacheSuggestion(content, suggestion);
-            return suggestion;
+            // Try the configured provider first
+            try
+            {
+                suggestion = aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
+                    ? await GetOpenAISuggestionAsync(content, apiKey)
+                    : await GetGeminiSuggestionAsync(content, apiKey);
+                
+                // If successful, cache and return
+                _cache.CacheSuggestion(content, suggestion);
+                return suggestion;
+            }
+            catch (Exception ex) when (ex.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase))
+            {
+                lastException = ex;
+                _logger.LogWarning($"{aiProvider} rate limit exceeded, trying fallback provider");
+                
+                // Try the other provider as fallback
+                try
+                {
+                    var fallbackProvider = aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ? "Gemini" : "OpenAI";
+                    var fallbackApiKey = _configuration[$"{fallbackProvider}:ApiKey"];
+                    
+                    if (string.IsNullOrEmpty(fallbackApiKey))
+                    {
+                        throw new InvalidOperationException($"No API key found for fallback provider {fallbackProvider}");
+                    }
+
+                    suggestion = fallbackProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
+                        ? await GetOpenAISuggestionAsync(content, fallbackApiKey)
+                        : await GetGeminiSuggestionAsync(content, fallbackApiKey);
+                    
+                    // If fallback successful, cache and return
+                    _cache.CacheSuggestion(content, suggestion);
+                    return suggestion;
+                }
+                catch (Exception fallbackEx)
+                {
+                    _logger.LogError($"Fallback provider failed: {fallbackEx.Message}");
+                    throw new AggregateException("Both primary and fallback AI providers failed", new[] { lastException, fallbackEx });
+                }
+            }
         }
         catch (Exception ex)
         {

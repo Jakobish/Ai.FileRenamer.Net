@@ -2,10 +2,15 @@ window.getPDFsFromFilePicker = () => {
     return new Promise((resolve, reject) => {
         const input = document.getElementById('filePicker');
         const files = Array.from(input.files);
-        const fileInfos = files.map(file => ({
-            name: file.name,
-            path: URL.createObjectURL(file)
-        }));
+        const fileInfos = files.map(file => {
+            const info = {
+                name: file.name,
+                path: URL.createObjectURL(file)
+            };
+            console.log('FileInfo:', JSON.stringify(info)); // Log each file info
+            return info;
+        });
+        console.log('All FileInfos:', JSON.stringify(fileInfos)); // Log all file infos
         resolve(fileInfos);
     });
 };

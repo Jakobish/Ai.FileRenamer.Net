@@ -315,9 +315,13 @@
         }
     }
 
+    [System.Text.Json.Serialization.JsonSerializable(typeof(FileInfo[]))]
     private class FileInfo
     {
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
         public string name { get; set; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("path")]
         public string path { get; set; } = string.Empty;
     }
 }
