@@ -124,9 +124,10 @@
             Files.Clear();
             ErrorMessage = null;
             _progress.Reset();
-            var fileInfos = await JSRuntime.InvokeAsync<FileInfo[]>("getPDFsFromFilePicker");
+
+            var fileInfos = await JSRuntime.InvokeAsync<IEnumerable<FileInfo>>("getPDFsFromFilePicker");
             
-            if (fileInfos == null || !fileInfos.Any())
+            if (fileInfos == null)
             {
                 ErrorMessage = "No files selected.";
                 return;
@@ -134,23 +135,23 @@
 
             foreach (var fileInfo in fileInfos)
             {
-                if (string.IsNullOrWhiteSpace(fileInfo.name) || string.IsNullOrWhiteSpace(fileInfo.path))
+                if (string.IsNullOrWhiteSpace(fileInfo.Name) || string.IsNullOrWhiteSpace(fileInfo.Path))
                 {
                     ErrorMessage = "Invalid file information received.";
                     return;
                 }
 
-                if (!fileInfo.name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+                if (!fileInfo.Name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
                 {
-                    ErrorMessage = $"File '{fileInfo.name}' is not a PDF file. Only PDF files are supported.";
+                    ErrorMessage = $"File '{fileInfo.Name}' is not a PDF file. Only PDF files are supported.";
                     return;
                 }
 
                 Files.Add(new FileRecord
                 {
                     Id = Files.Count + 1,
-                    FileName = fileInfo.name,
-                    FilePath = fileInfo.path,
+                    FileName = fileInfo.Name,
+                    FilePath = fileInfo.Path,
                     SuggestedName = "",
                     Status = "Pending"
                 });
@@ -161,6 +162,15 @@
             ErrorMessage = $"Error selecting files: {ex.Message}";
             Files.Clear();
         }
+    }
+
+    private record FileInfo
+    {
+        [System.Text.Json.Serialization.JsonPropertyName("name")]
+        public string Name { get; init; } = string.Empty;
+        
+        [System.Text.Json.Serialization.JsonPropertyName("path")]
+        public string Path { get; init; } = string.Empty;
     }
 
     private async Task ProcessFiles()
@@ -313,15 +323,5 @@
             ErrorMessage = $"Error renaming file: {ex.Message}";
             file.Status = "Error";
         }
-    }
-
-    [System.Text.Json.Serialization.JsonSerializable(typeof(FileInfo[]))]
-    private class FileInfo
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("name")]
-        public string name { get; set; } = string.Empty;
-        
-        [System.Text.Json.Serialization.JsonPropertyName("path")]
-        public string path { get; set; } = string.Empty;
     }
 }
