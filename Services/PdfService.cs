@@ -115,7 +115,7 @@ public class PdfService : IPdfService
         try
         {
             var api = new OpenAIClient(apiKey);
-            var chat = api.GetChatClient.CreateConversation();
+            var chat = api.GetChatClient().CreateConversation();
             chat.Model = "gpt-3.5-turbo";
             chat.Temperature = 0.7;
 
