@@ -94,21 +94,34 @@ public class PdfService : IPdfService
     {
         try
         {
-            // Get the API key from configuration
-            var apiKey = _configuration["OpenAI:ApiKey"] ?? throw new InvalidOperationException("OpenAI API key not found");
+            // Check cache first
+            var cachedSuggestion = _cache.GetCachedSuggestion(content);
+            if (cachedSuggestion != null)
+            {
+                _logger.LogInformation("Retrieved name suggestion from cache");
+                return cachedSuggestion;
+            }
 
-            // First try OpenAI
-            try
+            var aiProvider = _configuration["AIProvider"] ?? "OpenAI";
+            var apiKey = _configuration[$"{aiProvider}:ApiKey"] ?? throw new InvalidOperationException($"{aiProvider} API key not found");
+
+            string suggestion;
+            if (aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase))
             {
-                return await GetOpenAISuggestionAsync(content, apiKey);
+                suggestion = await GetOpenAISuggestionAsync(content, apiKey);
             }
-            catch (Exception ex)
+            else if (aiProvider.Equals("Gemini", StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning($"OpenAI suggestion failed, falling back to Gemini: {ex.Message}");
-                
-                // Fallback to Gemini if OpenAI fails
-                return await GetGeminiSuggestionAsync(content, apiKey);
+                suggestion = await GetGeminiSuggestionAsync(content, apiKey);
             }
+            else
+            {
+                throw new InvalidOperationException($"Unsupported AI provider: {aiProvider}");
+            }
+
+            // Cache the suggestion
+            _cache.CacheSuggestion(content, suggestion);
+            return suggestion;
         }
         catch (Exception ex)
         {
