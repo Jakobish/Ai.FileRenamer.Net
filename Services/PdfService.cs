@@ -3,32 +3,14 @@ using System.Text;
 using System.Text.RegularExpressions;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
-using OpenAI_API.Chat;
-using OpenAI_API.Completions;
-using OpenAI_API.Models;
-using FileRenamerProject.Data;
-using FileRenamerProject.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Moq;
-using Xunit;
-using System;
-using System.Threading.Tasks;
-
-
-
-
-
-
-
 
 namespace FileRenamerProject.Services;
 
 public class PdfService : IPdfService
 {
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _configuration;
     private readonly ILogger<PdfService> _logger;
+    private readonly IConfiguration _configuration;
+    private readonly HttpClient _httpClient;
     private readonly INameSuggestionCache _cache;
 
     public PdfService(
@@ -38,29 +20,32 @@ public class PdfService : IPdfService
         INameSuggestionCache cache)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        _configuration = configuration;
-        _logger = logger;
-        _cache = cache;
+        _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
     public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
     {
         try
         {
-            using var stream = new MemoryStream(pdfBytes);
-            using var pdfReader = new PdfReader(stream);
-            using var pdfDocument = new PdfDocument(pdfReader);
-
-            var textBuilder = new StringBuilder();
-
-            for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+            return await Task.Run(() =>
             {
-                var page = pdfDocument.GetPage(i);
-                var text = PdfTextExtractor.GetTextFromPage(page);
-                textBuilder.Append(text);
-            }
+                using var stream = new MemoryStream(pdfBytes);
+                using var pdfReader = new PdfReader(stream);
+                using var pdfDocument = new PdfDocument(pdfReader);
 
-            return textBuilder.ToString();
+                var textBuilder = new StringBuilder();
+
+                for (int i = 1; i <= pdfDocument.GetNumberOfPages(); i++)
+                {
+                    var page = pdfDocument.GetPage(i);
+                    var text = PdfTextExtractor.GetTextFromPage(page);
+                    textBuilder.Append(text);
+                }
+
+                return textBuilder.ToString();
+            });
         }
         catch (Exception ex)
         {
@@ -75,41 +60,16 @@ public class PdfService : IPdfService
         {
             // Check cache first
             var cachedSuggestion = _cache.GetCachedSuggestion(content);
-            if (cachedSuggestion != null)
+            if (!string.IsNullOrEmpty(cachedSuggestion))
             {
                 _logger.LogInformation("Retrieved name suggestion from cache");
                 return cachedSuggestion;
             }
 
-            var aiProvider = _configuration["AIProvider"] ?? "Gemini";
-            var apiKey = _configuration[$"{aiProvider}:ApiKey"] ??
-                throw new InvalidOperationException($"{aiProvider} API key not found");
+            var apiKey = _configuration["Gemini:ApiKey"] ??
+                throw new InvalidOperationException("Gemini API key not found");
 
-            string suggestion;
-            try
-            {
-                suggestion = aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
-                    ? await GetOpenAISuggestionAsync(content, apiKey)
-                    : await GetGeminiSuggestionAsync(content, apiKey);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning($"{aiProvider} failed: {ex.Message}. Trying fallback provider...");
-
-                // Try the other provider as fallback
-                var fallbackProvider = aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ? "Gemini" : "OpenAI";
-                var fallbackApiKey = _configuration[$"{fallbackProvider}:ApiKey"];
-
-                if (string.IsNullOrEmpty(fallbackApiKey))
-                {
-                    throw new InvalidOperationException($"No API key found for fallback provider {fallbackProvider}");
-                }
-
-                suggestion = fallbackProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase)
-                    ? await GetOpenAISuggestionAsync(content, fallbackApiKey)
-                    : await GetGeminiSuggestionAsync(content, fallbackApiKey);
-            }
-
+            var suggestion = await GetGeminiSuggestionAsync(content, apiKey);
             suggestion = SanitizeFileName(suggestion);
             _cache.CacheSuggestion(content, suggestion);
             return suggestion;
@@ -118,37 +78,6 @@ public class PdfService : IPdfService
         {
             _logger.LogError($"Failed to get AI suggestion for file {fileName}: {ex.Message}");
             throw;
-        }
-    }
-
-    [Obsolete]
-    private async Task<string> GetOpenAISuggestionAsync(string content, string apiKey)
-    {
-        try
-        {
-            var api = new OpenAI_API.OpenAIAPI(apiKey);
-
-            var chatRequest = new ChatRequest
-            {
-                Model = "gpt-3.5-turbo",
-                Messages = new[]
-                {
-                    new ChatMessage
-                    {
-                        Role = ChatMessageRole.User,
-                        TextContent = $"Suggest a filename for a PDF with the following content: {content}"
-                    }
-                }
-            };
-
-            var openAiChatCompletion = await api.Chat.CreateChatCompletion(chatRequest);
-
-            return openAiChatCompletion.Choices[0].Message.Content.Trim();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError($"OpenAI API call failed: {ex.Message}");
-            return string.Empty;
         }
     }
 
@@ -185,11 +114,26 @@ public class PdfService : IPdfService
             }
 
             var result = await response.Content.ReadFromJsonAsync<dynamic>();
-            var suggestedName = result?.candidates?[0]?.content?.parts?[0]?.text?.ToString();
+
+            // Add explicit null checks with detailed logging
+            if (result == null)
+            {
+                _logger.LogError("Gemini API response was null");
+                throw new InvalidOperationException("No response received from Gemini API");
+            }
+
+            if (result.candidates == null || result.candidates.Count == 0)
+            {
+                _logger.LogError("No candidates found in Gemini API response");
+                throw new InvalidOperationException("No candidates in Gemini API response");
+            }
+
+            var suggestedName = result?.candidates?.FirstOrDefault()?.content?.parts?.FirstOrDefault()?.text;
 
             if (string.IsNullOrWhiteSpace(suggestedName))
             {
-                throw new InvalidOperationException("Gemini returned empty response");
+                _logger.LogError("Suggested name is null or empty after Gemini API call");
+                throw new InvalidOperationException("Gemini returned empty or invalid response");
             }
 
             return suggestedName;
@@ -207,7 +151,7 @@ public class PdfService : IPdfService
             throw new ArgumentException("Input string is empty or whitespace", nameof(input));
 
         // Remove any file extension if present
-        input = Path.GetFileNameWithoutExtension(input);
+        input = System.IO.Path.GetFileNameWithoutExtension(input);
 
         // Convert to lowercase and replace spaces/special chars with underscore
         input = input.ToLowerInvariant();
