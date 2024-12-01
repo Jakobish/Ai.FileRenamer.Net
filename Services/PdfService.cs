@@ -24,7 +24,7 @@ public class PdfService : IPdfService
         ILogger<PdfService> logger,
         INameSuggestionCache cache)
     {
-        _httpClient = httpClient;
+        _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _configuration = configuration;
         _logger = logger;
         _cache = cache;

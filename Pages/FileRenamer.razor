@@ -164,12 +164,12 @@
         }
     }
 
-    private record FileInfo
+    private class FileInfo
     {
-        [System.Text.Json.Serialization.JsonPropertyName("name")]
+        [System.Text.Json.Serialization.JsonPropertyName("Name")]
         public string Name { get; init; } = string.Empty;
         
-        [System.Text.Json.Serialization.JsonPropertyName("path")]
+        [System.Text.Json.Serialization.JsonPropertyName("Path")]
         public string Path { get; init; } = string.Empty;
     }
 
