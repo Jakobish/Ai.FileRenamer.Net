@@ -11,7 +11,7 @@ The File Renamer Project is a Blazor WebAssembly application designed to streaml
 - ✓ **File Selection**: Select individual PDF files or entire folders using a file picker.
 - ✓ **File Grid Display**: Show selected files in a clean, sortable grid with:
   - File Name
-  - Path
+  - File Size
   - Suggested Name
   - Status
 - ✓ **PDF Content Extraction**: Extract up to 300 words or the first 3 pages of a PDF.
@@ -44,7 +44,7 @@ The File Renamer Project is a Blazor WebAssembly application designed to streaml
 | **File Display**         | Show selected files in a grid with essential columns.                                            | ✓ Completed |
 | **Content Extraction**   | Extract limited content (up to 300 words or 3 pages) from PDF files.                             | ✓ Completed |
 | **AI Integration**       | Send extracted content to OpenAI GPT API for name suggestions.                                   | ✓ Completed |
-| **Database Integration** | Store file data (name, path, suggested name, status) in SQLite using EF Core.                    | ✓ Completed |
+| **Database Integration** | Store file data (name, size, suggested name, status) in SQLite using EF Core.                    | ✓ Completed |
 | **Batch Processing**     | Process files in small batches for optimal performance.                                          | ✓ Completed |
 | **Error Handling**       | Handle errors for unsupported files or issues during processing.                                 | ✓ Completed |
 | **Progress Bar**         | Add a visual indicator for file processing progress.                                             | ✓ Completed |
