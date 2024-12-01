@@ -22,7 +22,7 @@ The File Renamer Project is a Blazor WebAssembly application designed to streaml
 - ✓ **Error Handling**: Comprehensive error handling with user-friendly messages.
 
 ### **Planned Enhancements**
-- ⏳ **Progress Bar**: Visual indicator for file processing status.
+- ✓ **Progress Bar**: Visual indicator for file processing status.
 - ⏳ **Undo/Redo**: Revert or redo suggested names for individual or all files.
 - ⏳ **Manual Editing**: Allow direct editing of suggested names in the grid.
 - ⏳ **Drag-and-Drop Support**: Enable users to drag files or folders directly into the application.
@@ -47,7 +47,7 @@ The File Renamer Project is a Blazor WebAssembly application designed to streaml
 | **Database Integration** | Store file data (name, path, suggested name, status) in SQLite using EF Core.                    | ✓ Completed |
 | **Batch Processing**     | Process files in small batches for optimal performance.                                          | ✓ Completed |
 | **Error Handling**       | Handle errors for unsupported files or issues during processing.                                 | ✓ Completed |
-| **Progress Bar**         | Add a visual indicator for file processing progress.                                             | ⏳ Planned |
+| **Progress Bar**         | Add a visual indicator for file processing progress.                                             | ✓ Completed |
 | **Undo/Redo**           | Implement functionality to revert or redo name changes.                                          | ⏳ Planned |
 | **Manual Editing**       | Allow users to manually edit suggested names in the grid.                                        | ⏳ Planned |
 | **Drag and Drop**        | Add drag-and-drop support for selecting files.                                                   | ⏳ Planned |
