@@ -117,7 +117,9 @@ public class PdfService : IPdfService
         {
             var api = new OpenAIClient(apiKey);
 
-            var chatRequest = new ChatCompletionCreateRequest
+            var chatRequest = new ChatRequest
+            
+            
             {
                 Model = "gpt-3.5-turbo",
                 Temperature = 0.7f,
