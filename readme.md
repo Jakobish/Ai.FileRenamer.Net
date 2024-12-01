@@ -61,6 +61,58 @@ The File Renamer Project is a Blazor WebAssembly application designed to streaml
 
 ---
 
+## **Next Steps (Prioritized)**
+
+### **High Priority**
+1. **Manual Name Editing**
+   - Allow users to directly edit suggested names in the grid
+   - Add validation for edited names
+   - Implement save/cancel functionality for edits
+
+2. **Progress Tracking**
+   - Add progress bar for batch processing
+   - Implement status indicators for individual files
+   - Show overall process completion percentage
+
+3. **Undo/Redo System**
+   - Implement undo/redo for individual file renames
+   - Add batch undo/redo functionality
+   - Store rename history in SQLite
+
+### **Medium Priority**
+4. **Enhanced File Selection**
+   - Add drag-and-drop support
+   - Implement multi-folder selection
+   - Add file filtering options
+
+5. **Improved PDF Parsing**
+   - Handle multi-column layouts
+   - Better table extraction
+   - Support for longer documents
+
+6. **Search and Filter**
+   - Add search functionality for file grid
+   - Implement filters (status, file type, date)
+   - Add column sorting
+
+### **Lower Priority**
+7. **UI Improvements**
+   - Implement dark mode
+   - Add responsive design improvements
+   - Enhance grid layout and styling
+
+8. **Cloud Integration**
+   - Add Google Drive support
+   - Implement OneDrive integration
+   - Add Dropbox support
+
+9. **Additional Features**
+   - Implement dry run mode
+   - Add backup/restore functionality
+   - Create change logs
+
+---
+
 ## **How to Run**
 
 ### **Prerequisites**
