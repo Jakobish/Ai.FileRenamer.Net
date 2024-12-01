@@ -74,6 +74,11 @@ public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
         }
     }
 
+    public Task<string> GetSuggestedNameFromAIAsync(string fileName, string content)
+    {
+        throw new NotImplementedException();
+    }
+
     // Placeholder for the hypothetical Gemini API call
     private async Task<string> GetGeminiSuggestionAsync(string content, string apiKey)
     {
