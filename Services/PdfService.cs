@@ -3,10 +3,13 @@ using System.Text;
 using System.Text.RegularExpressions;
 using iText.Kernel.Pdf;
 using iText.Kernel.Pdf.Canvas.Parser;
-using OpenAI_API;
 using Microsoft.Extensions.Logging;
 using FileRenamerProject.Data;
 using FileRenamerProject.Services;
+using OpenAI.Chat;
+using OpenAI;
+
+
 
 namespace FileRenamerProject.Services;
 
@@ -15,12 +18,11 @@ public class PdfService : IPdfService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<PdfService> _logger;
-    private readonly OpenAIAPI _openAIApi;
     private readonly INameSuggestionCache _cache;
 
     public PdfService(
-        HttpClient httpClient, 
-        IConfiguration configuration, 
+        HttpClient httpClient,
+        IConfiguration configuration,
         ILogger<PdfService> logger,
         INameSuggestionCache cache)
     {
@@ -69,7 +71,7 @@ public class PdfService : IPdfService
             }
 
             var aiProvider = _configuration["AIProvider"] ?? "Gemini";
-            var apiKey = _configuration[$"{aiProvider}:ApiKey"] ?? 
+            var apiKey = _configuration[$"{aiProvider}:ApiKey"] ??
                 throw new InvalidOperationException($"{aiProvider} API key not found");
 
             string suggestion;
@@ -82,11 +84,11 @@ public class PdfService : IPdfService
             catch (Exception ex)
             {
                 _logger.LogWarning($"{aiProvider} failed: {ex.Message}. Trying fallback provider...");
-                
+
                 // Try the other provider as fallback
                 var fallbackProvider = aiProvider.Equals("OpenAI", StringComparison.OrdinalIgnoreCase) ? "Gemini" : "OpenAI";
                 var fallbackApiKey = _configuration[$"{fallbackProvider}:ApiKey"];
-                
+
                 if (string.IsNullOrEmpty(fallbackApiKey))
                 {
                     throw new InvalidOperationException($"No API key found for fallback provider {fallbackProvider}");
@@ -112,18 +114,21 @@ public class PdfService : IPdfService
     {
         try
         {
-            var api = new OpenAIAPI(apiKey);
-            var chat = api.Chat.CreateConversation();
-            
+            var api = new OpenAIClient(apiKey);
+            var chat = api.GetChatClient.CreateConversation();
+            chat.Model = "gpt-3.5-turbo";
+            chat.Temperature = 0.7;
+
+
             chat.AppendSystemMessage("You are a helpful assistant that suggests concise, descriptive filenames based on PDF content. The filename should be clear, professional, and follow these rules: 1. Use underscores instead of spaces 2. No special characters except underscores and hyphens 3. Maximum 50 characters 4. All lowercase 5. Must end in .pdf");
             chat.AppendUserInput($"Suggest a filename for a PDF with the following content:\n\n{content}");
-            
+
             var suggestedName = await chat.GetResponseFromChatbotAsync();
             if (string.IsNullOrWhiteSpace(suggestedName))
             {
                 throw new InvalidOperationException("OpenAI returned empty response");
             }
-            
+
             return suggestedName;
         }
         catch (Exception ex)
@@ -167,7 +172,7 @@ public class PdfService : IPdfService
 
             var result = await response.Content.ReadFromJsonAsync<dynamic>();
             var suggestedName = result?.candidates?[0]?.content?.parts?[0]?.text?.ToString();
-            
+
             if (string.IsNullOrWhiteSpace(suggestedName))
             {
                 throw new InvalidOperationException("Gemini returned empty response");
