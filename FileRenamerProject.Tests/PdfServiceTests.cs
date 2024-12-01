@@ -85,11 +85,11 @@ public class PdfServiceTests
     }
 
     // Helper method to call the private SanitizeFileName method using reflection
-    private string CallSanitizeFileName(string input)
+    private string? CallSanitizeFileName(string input)
     {
         var methodInfo = typeof(PdfService).GetMethod("SanitizeFileName", 
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         
-        return (string)methodInfo.Invoke(_pdfService, new object[] { input });
+        return methodInfo.Invoke(_pdfService, new object[] { input }) as string;
     }
 }
