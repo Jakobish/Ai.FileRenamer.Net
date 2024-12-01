@@ -24,10 +24,10 @@
         </button>
 
         <div class="overall-progress-bar-container" hidden="@(!IsProcessing)">
-            <div class="overall-progress-bar" style="width: @(_processedCount * 100 / Files.Count)%">
+            <div class="overall-progress-bar" style="width: @(Files.Count > 0 ? (_processedCount * 100 / Files.Count) : 0)%">
                 @if (IsProcessing)
                 {
-                    <span class="progress-text">@(_processedCount * 100 / Files.Count)%</span> 
+                    <span class="progress-text">@(Files.Count > 0 ? (_processedCount * 100 / Files.Count) : 0)%</span> 
                 }
             </div>
         </div>
