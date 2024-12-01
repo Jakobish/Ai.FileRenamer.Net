@@ -22,6 +22,15 @@
                 <span>Process Files</span>
             }
         </button>
+
+        <div class="overall-progress-bar-container" hidden="@(!IsProcessing)">
+            <div class="overall-progress-bar" style="width: @(_processedCount * 100 / Files.Count)%">
+                @if (IsProcessing)
+                {
+                    <span class="progress-text">@(_processedCount * 100 / Files.Count)%</span> 
+                }
+            </div>
+        </div>
         @if (IsProcessing)
         {
             <button @onclick="CancelProcessing" class="cancel-button">Cancel</button>

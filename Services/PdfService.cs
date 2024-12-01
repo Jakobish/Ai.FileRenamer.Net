@@ -43,88 +43,49 @@ public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
         return string.Empty;
     }
 }
-    public async Task<string> GetSuggestedNameFromAIAsync(string fileName, string content)
+    public async Task<string> GetSuggestedNameFromAIAsync(string content)
     {
         try
         {
-            var apiKey = _configuration["OpenAIApiKey"];
+            var apiKey = _configuration["GeminiApiKey"];
             if (string.IsNullOrEmpty(apiKey))
             {
-                throw new InvalidOperationException("OpenAI API key not configured");
+                throw new InvalidOperationException("Gemini API key not configured");
             }
 
-            _httpClient.DefaultRequestHeaders.Authorization =
-                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
-
-            // Take only the first 1000 characters of content to avoid token limits
-            var truncatedContent = content.Length > 1000 ? content.Substring(0, 1000) : content;
-
-            var requestData = new
-            {
-                model = "gpt-3.5-turbo",
-                messages = new[]
-                {
-                    new
-                    {
-                        role = "system",
-                        content = "You are a helpful assistant that suggests concise, descriptive filenames based on PDF content. The filename should be clear, descriptive, and follow these rules: use underscores instead of spaces, be less than 50 characters, include only letters, numbers, and underscores, and end with .pdf"
-                    },
-                    new
-                    {
-                        role = "user",
-                        content = $"Please suggest a filename for a PDF with the following content:\n\n{truncatedContent}\n\nCurrent filename is: {fileName}"
-                    }
-                }
-            };
-
-            var response = await _httpClient.PostAsJsonAsync(
-                "https://api.openai.com/v1/chat/completions",
-                requestData
-            );
-
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new HttpRequestException($"OpenAI request failed: {response.StatusCode}");
-            }
-
-            var result = await response.Content.ReadFromJsonAsync<OpenAIResponse>().ConfigureAwait(false);
-            if (result?.Choices == null || result.Choices.Length == 0)
-            {
-                throw new InvalidOperationException("No suggestion received from OpenAI");
-            }
-
-            var suggestedName = result.Choices[0].Message.Content.Trim();
+            // Call the hypothetical Gemini API
+            var suggestedName = await GetGeminiSuggestionAsync(content, apiKey); 
 
             // Clean up the suggested name using more efficient regex
             suggestedName = Regex.Replace(suggestedName, @"[^\w\d]", "_");
             suggestedName = Regex.Replace(suggestedName, @"_+", "_");
             suggestedName = suggestedName.Trim('_');
 
-            // Remove .pdf if it was included
-            suggestedName = suggestedName.Replace(".pdf", "");
-
-            return suggestedName.Length > 50 
-                ? suggestedName[..50] 
-                : suggestedName;
+            return suggestedName; 
+        }
+        catch (GeminiApiException ex)
+        {
+            // Log or handle Gemini specific exceptions
+            throw new Exception($"Gemini API error: {ex.Message}", ex);
         }
         catch (Exception ex)
         {
-            throw new Exception($"Error getting AI suggestion: {ex.Message}", ex);
+            throw new Exception($"Error getting suggestion: {ex.Message}", ex);
         }
     }
 
-    private class OpenAIResponse
+    // Placeholder for the hypothetical Gemini API call
+    private async Task<string> GetGeminiSuggestionAsync(string content, string apiKey)
     {
-        public Choice[] Choices { get; set; } = Array.Empty<Choice>();
+        // Replace this with the actual Gemini API call
+        // This is a placeholder and would need to be implemented using the Gemini API client library
+        // Assume this method handles authentication and response parsing
+        await Task.Delay(1000); // Simulate API call delay
+        return "Suggested_Filename"; 
     }
 
-    private class Choice
-    {
-        public Message Message { get; set; } = new();
-    }
-
-    private class Message
-    {
-        public string Content { get; set; } = "";
-    }
+    // Placeholder for Gemini specific exception
+    public class GeminiApiException : Exception {
+        public GeminiApiException(string message) : base(message) { }
+    } 
 }
