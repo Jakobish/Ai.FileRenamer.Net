@@ -2,6 +2,8 @@
 @inject IJSRuntime JSRuntime
 @inject FileDbContext DbContext
 @inject IFileProcessingService FileProcessingService
+@using FileRenamerProject.Services
+
 
 <PageTitle>PDF File Renamer</PageTitle>
 
@@ -11,11 +13,13 @@
 
     <section class="file-selection">
         <label for="filePicker">Select PDF Files:</label>
-        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" disabled="@IsProcessing" title="Select PDF files to rename" />
+        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" disabled="@IsProcessing"
+            title="Select PDF files to rename" />
     </section>
 
     <section class="processing-controls">
-        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any() || IsProcessing)" title="Start processing selected files">
+        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any() || IsProcessing)"
+            title="Start processing selected files">
             @if (IsProcessing)
             {
                 <span>Processing... (@_processedCount of @Files.Count)</span>
@@ -27,7 +31,8 @@
         </button>
         @if (IsProcessing)
         {
-            <button @onclick="CancelProcessing" class="cancel-button" title="Cancel the ongoing file processing">Cancel</button>
+            <button @onclick="CancelProcessing" class="cancel-button"
+                title="Cancel the ongoing file processing">Cancel</button>
         }
     </section>
 
@@ -105,7 +110,8 @@
                         <td>
                             @if (file.Status == "Completed")
                             {
-                                <button @onclick="() => ApplyRename(file)" class="rename-button" title="Apply the suggested name to this file">Apply</button>
+                                <button @onclick="() => ApplyRename(file)" class="rename-button"
+                                    title="Apply the suggested name to this file">Apply</button>
                             }
                         </td>
                     </tr>
@@ -116,7 +122,8 @@
 
 </div>
 
-@code {
+@code
+{
     private List<FileRecord> Files = new();
     private bool IsProcessing;
     private string? ErrorMessage;
@@ -133,7 +140,7 @@
             _progress.Reset();
 
             var fileInfos = await JSRuntime.InvokeAsync<IEnumerable<FileInfo>>("getPDFsFromFilePicker");
-            
+
             if (fileInfos == null)
             {
                 ErrorMessage = "No files selected.";
@@ -155,13 +162,13 @@
                 }
 
                 Files.Add(new FileRecord
-                {
-                    Id = Files.Count + 1,
-                    FileName = fileInfo.name,
-                    FilePath = fileInfo.path,
-                    SuggestedName = "",
-                    Status = "Pending"
-                });
+                    {
+                        Id = Files.Count + 1,
+                        FileName = fileInfo.name,
+                        FilePath = fileInfo.path,
+                        SuggestedName = "",
+                        Status = "Pending"
+                    });
             }
         }
         catch (Exception ex)
@@ -190,12 +197,12 @@
             IsProcessing = true;
             _processedCount = 0;
             ErrorMessage = null;
-            
+
             using (_cts = new CancellationTokenSource())
             {
                 await FileProcessingService.ProcessFilesAsync(Files, _cts.Token);
             }
-            
+
             _progress.Complete();
         }
         catch (OperationCanceledException)
@@ -296,7 +303,7 @@
             file.SuggestedName = suggestedName;
             file.Status = "Completed";
             _progress.UpdateProgress(file.FileName, $"Completed processing {file.FileName}.");
-            
+
             var existingFile = DbContext.Files.FirstOrDefault(f => f.FilePath == file.FilePath);
             if (existingFile != null)
             {
@@ -306,7 +313,7 @@
             {
                 DbContext.Files.Add(file);
             }
-            
+
             _processedCount++;
         }
         catch (Exception ex)
