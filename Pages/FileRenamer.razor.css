@@ -116,6 +116,12 @@
         border: 1px solid var(--mud-palette-lines-default);
     }
 
+    .progress-messages {
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        color: var(--mud-palette-text-secondary);
+    }
+
     .progress-info {
         display: flex;
         justify-content: space-between;

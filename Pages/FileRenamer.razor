@@ -40,6 +40,12 @@
     </section>
 
     <section class="detailed-progress" hidden="@(!_progress.IsProcessing)">
+        <div class="progress-messages">
+            @foreach (var message in _progress.Messages)
+            {
+                <div>@message</div>
+            }
+        </div>
         <div class="progress-container">
             <div class="progress-info">
                 <span>Overall Progress: @Math.Round(_progress.OverallProgress)%</span>
@@ -208,6 +214,43 @@
         finally
         {
             IsProcessing = false;
+        }
+    }
+
+    private class ProgressState
+    {
+        public bool IsProcessing { get; set; }
+        public double OverallProgress { get; set; }
+        public string CurrentFileName { get; set; } = string.Empty;
+        public string CurrentStatus { get; set; } = string.Empty;
+        public int CurrentBatchProcessed { get; set; }
+        public int CurrentBatchSize { get; set; }
+        public double BatchProgress => CurrentBatchSize > 0 ? (CurrentBatchProcessed * 100.0 / CurrentBatchSize) : 0;
+        public List<string> Messages { get; } = new();
+
+        public void UpdateProgress(string fileName, string status)
+        {
+            CurrentFileName = fileName;
+            CurrentStatus = status;
+            Messages.Add($"{fileName}: {status}");
+        }
+
+        public void Reset()
+        {
+            IsProcessing = false;
+            OverallProgress = 0;
+            CurrentFileName = string.Empty;
+            CurrentStatus = string.Empty;
+            CurrentBatchProcessed = 0;
+            CurrentBatchSize = 0;
+            Messages.Clear();
+        }
+
+        public void Complete()
+        {
+            IsProcessing = false;
+            CurrentStatus = "All files processed.";
+            Messages.Add(CurrentStatus);
         }
     }
 
