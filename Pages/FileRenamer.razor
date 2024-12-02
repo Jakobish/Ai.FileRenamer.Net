@@ -1,7 +1,7 @@
 @page "/file-renamer"
 @inject IJSRuntime JSRuntime
 @inject FileDbContext DbContext
-@inject IPdfService PdfService
+@inject IFileProcessingService FileProcessingService
 
 <PageTitle>PDF File Renamer</PageTitle>
 
@@ -184,27 +184,9 @@
             _processedCount = 0;
             ErrorMessage = null;
             
-            const int batchSize = 3;
-            _progress.Initialize(Files.Count, batchSize);
-            
             using (_cts = new CancellationTokenSource())
             {
-                var pendingFiles = Files.Where(f => f.Status == "Pending").ToList();
-                
-                for (int i = 0; i < pendingFiles.Count; i += batchSize)
-                {
-                    if (_cts.Token.IsCancellationRequested)
-                        break;
-
-                    var batch = pendingFiles.Skip(i).Take(batchSize).ToList();
-                    _progress.UpdateBatch(0, batch.Count);
-                    
-                    var tasks = batch.Select(file => ProcessSingleFile(file));
-                    await Task.WhenAll(tasks);
-                    
-                    // Save changes after each batch
-                    await DbContext.SaveChangesAsync(_cts.Token);
-                }
+                await FileProcessingService.ProcessFilesAsync(Files, _cts.Token);
             }
             
             _progress.Complete();
@@ -307,10 +289,7 @@
 
         try
         {
-            var newFileName = Path.GetFileNameWithoutExtension(file.SuggestedName) + ".pdf";
-            file.FileName = newFileName;
-            file.Status = "Renamed";
-            await DbContext.SaveChangesAsync();
+            await FileProcessingService.ApplyRenameAsync(file);
         }
         catch (Exception ex)
         {
