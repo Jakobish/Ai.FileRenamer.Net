@@ -14,6 +14,7 @@ public class PdfServiceTests
     private readonly Mock<IConfiguration> _configMock;
     private readonly HttpClient _httpClient;
     private readonly Mock<INameSuggestionCache> _cacheMock;
+    private readonly Mock<IFileLogger> _fileLoggerMock;
     private readonly PdfService _pdfService;
 
     public PdfServiceTests()
@@ -22,12 +23,19 @@ public class PdfServiceTests
         _configMock = new Mock<IConfiguration>();
         _httpClient = new HttpClient();
         _cacheMock = new Mock<INameSuggestionCache>();
+        _fileLoggerMock = new Mock<IFileLogger>();
 
         // Setup configuration mock
         _configMock.Setup(x => x["OpenAI:ApiKey"]).Returns("test-api-key");
         _configMock.Setup(x => x["Gemini:ApiKey"]).Returns("test-api-key");
 
-        _pdfService = new PdfService(_httpClient, _configMock.Object, _loggerMock.Object, _cacheMock.Object);
+        _pdfService = new PdfService(
+            _httpClient, 
+            _configMock.Object, 
+            _loggerMock.Object, 
+            _cacheMock.Object, 
+            _fileLoggerMock.Object
+        );
     }
 
     [Theory]

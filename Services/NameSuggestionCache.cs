@@ -12,7 +12,7 @@ public class NameSuggestionCache : INameSuggestionCache
     public string GetCachedSuggestion(string content)
     {
         var hash = ComputeHash(content);
-        return _cache.TryGetValue(hash, out var suggestion) ? suggestion : string.Empty;
+        return _cache.TryGetValue(hash, out var suggestion) ? suggestion : null;
     }
 
     public void CacheSuggestion(string content, string suggestion)

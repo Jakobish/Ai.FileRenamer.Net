@@ -153,17 +153,17 @@ public class PdfService : IPdfService
     private string SanitizeFileName(string input)
     {
         if (string.IsNullOrWhiteSpace(input))
-            throw new ArgumentException("Input string is empty or whitespace", nameof(input));
+            return string.Empty;
 
         // Remove any file extension if present
         input = System.IO.Path.GetFileNameWithoutExtension(input);
 
-        // Convert to lowercase and replace spaces/special chars with underscore
+        // Convert to lowercase
         input = input.ToLowerInvariant();
-        input = Regex.Replace(input, @"[^\w\-]", "_");
-        input = Regex.Replace(input, @"_+", "_");
-        input = input.Trim('_', '-');
-
+        
+        // Remove special characters (except underscores and hyphens)
+        input = Regex.Replace(input, @"[^a-z0-9_\-]", "");
+        
         // Ensure max length (excluding .pdf extension)
         const int maxLength = 50 - 4; // 4 is length of ".pdf"
         if (input.Length > maxLength)
