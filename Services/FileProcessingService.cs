@@ -104,10 +104,6 @@ public class FileProcessingService : IFileProcessingService
         }
     }
 
-    public Task ProcessFilesAsync(List<FileRecord> files, CancellationToken cancellationToken)
-    {
-        throw new NotImplementedException();
-    }
 
     public Task ApplyRenameAsync(FileRecord file)
     {
