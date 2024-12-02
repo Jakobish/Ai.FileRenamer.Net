@@ -86,7 +86,7 @@ public class FileProcessingService : IFileProcessingService
         }
     }
 
-    public async Task ApplyRenameAsync(FileRecord file, CancellationToken cancellationToken)
+    public async Task ApplyRenameAsync(FileRenamerProject.Data.FileRecord file)
     {
         if (file == null) return;
 
