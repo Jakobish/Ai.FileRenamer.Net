@@ -12,17 +12,20 @@ public class PdfService : IPdfService
     private readonly IConfiguration _configuration;
     private readonly HttpClient _httpClient;
     private readonly INameSuggestionCache _cache;
+    private readonly IFileLogger _fileLogger;
 
     public PdfService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<PdfService> logger,
-        INameSuggestionCache cache)
+        INameSuggestionCache cache,
+        IFileLogger fileLogger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _fileLogger = fileLogger ?? throw new ArgumentNullException(nameof(fileLogger));
     }
 
     public async Task<string> ExtractTextFromPdfAsync(byte[] pdfBytes)
@@ -69,6 +72,7 @@ public class PdfService : IPdfService
             var apiKey = _configuration["Gemini:ApiKey"] ??
                 throw new InvalidOperationException("Gemini API key not found");
 
+            await _fileLogger.LogAsync($"Using Gemini API key: {apiKey}", LogLevel.Debug);
             var suggestion = await GetGeminiSuggestionAsync(content, apiKey);
             suggestion = SanitizeFileName(suggestion);
             _cache.CacheSuggestion(content, suggestion);
@@ -110,6 +114,7 @@ public class PdfService : IPdfService
             if (!response.IsSuccessStatusCode)
             {
                 var error = await response.Content.ReadAsStringAsync();
+                await _fileLogger.LogAsync($"Gemini API call failed: {error}", LogLevel.Error);
                 throw new InvalidOperationException($"Gemini API call failed: {error}");
             }
 

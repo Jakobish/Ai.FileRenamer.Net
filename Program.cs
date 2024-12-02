@@ -43,6 +43,7 @@ var customConfig = new Dictionary<string, string>
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddScoped<IPdfService, PdfService>();
 builder.Services.AddSingleton<INameSuggestionCache, NameSuggestionCache>();
+builder.Services.AddSingleton<IFileLogger, FileLogger>();
 
 // Configure in-memory database for Blazor WebAssembly
 builder.Services.AddDbContext<FileDbContext>(options =>
