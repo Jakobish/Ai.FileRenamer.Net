@@ -1,4 +1,6 @@
+using FileRenamerProject.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.JSInterop;
 
 namespace FileRenamerProject.Services;
 
@@ -100,5 +102,15 @@ public class FileProcessingService : IFileProcessingService
             file.Status = "Error";
             throw new InvalidOperationException($"Error renaming file: {ex.Message}", ex);
         }
+    }
+
+    public Task ProcessFilesAsync(List<FileRecord> files, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task ApplyRenameAsync(FileRecord file)
+    {
+        throw new NotImplementedException();
     }
 }
