@@ -50,9 +50,9 @@ public class PdfService : IPdfService
                 return textBuilder.ToString();
             });
         }
-        catch (Exception ex)
+        catch (HttpRequestException ex)
         {
-            _logger.LogError($"Failed to extract text from PDF: {ex.Message}");
+            _logger.LogError(ex, "ExtractTextFromPdfAsync failed: {Message}", ex.Message);
             throw;
         }
     }
@@ -80,7 +80,7 @@ public class PdfService : IPdfService
         }
         catch (Exception ex)
         {
-            _logger.LogError($"Failed to get AI suggestion for file {fileName}: {ex.Message}");
+            _logger.LogError(ex, "GetSuggestedNameFromAIAsync failed for file {FileName}: {Message}", fileName, ex.Message);
             throw;
         }
     }

@@ -64,12 +64,15 @@ namespace FileRenamerProject.Services
         private static string EncryptString(string plainText)
         {
             // Placeholder encryption - replace with a secure method
-            byte[] salt = RandomNumberGenerator.GetBytes(16);
-            using (var deriveBytes = new Rfc2898DeriveBytes(plainText, salt, 1000, HashAlgorithmName.SHA256))
-            {
-                var key = deriveBytes.GetBytes(32);
-                return Convert.ToBase64String(key);
-            }
+            using var aes = Aes.Create();
+            aes.GenerateKey();
+            aes.GenerateIV();
+            var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
+            using var ms = new MemoryStream();
+            using var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write);
+            using var sw = new StreamWriter(cs);
+            sw.Write(plainText);
+            return Convert.ToBase64String(ms.ToArray());
         }
 
         private static string DecryptString(string encryptedText)

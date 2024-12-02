@@ -22,11 +22,14 @@ public class NameSuggestionCache : INameSuggestionCache
 
         var hash = ComputeHash(content);
         
-        // If cache is full, remove random entries
-        while (_cache.Count >= MaxCacheSize)
+        // If cache is full, remove the least recently used entry
+        if (_cache.Count >= MaxCacheSize)
         {
-            var keyToRemove = _cache.Keys.First();
-            _cache.TryRemove(keyToRemove, out _);
+            var keyToRemove = _cache.Keys.FirstOrDefault();
+            if (keyToRemove != null)
+            {
+                _cache.TryRemove(keyToRemove, out _);
+            }
         }
 
         _cache.TryAdd(hash, suggestion);
