@@ -105,8 +105,4 @@ public class FileProcessingService : IFileProcessingService
     }
 
 
-    public Task ApplyRenameAsync(FileRecord file)
-    {
-        throw new NotImplementedException();
-    }
 }
