@@ -159,7 +159,7 @@
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error selecting files: {ex.Message}";
+            ErrorMessage = $"Error selecting files: {ex.Message}. Please try again.";
             Files.Clear();
         }
     }
@@ -199,7 +199,7 @@
                     var batch = pendingFiles.Skip(i).Take(batchSize).ToList();
                     _progress.UpdateBatch(0, batch.Count);
                     
-                    var tasks = batch.Select(ProcessSingleFile);
+                    var tasks = batch.Select(file => ProcessSingleFile(file));
                     await Task.WhenAll(tasks);
                     
                     // Save changes after each batch
@@ -220,7 +220,7 @@
         }
         catch (Exception ex)
         {
-            ErrorMessage = $"Error processing files: {ex.Message}";
+            ErrorMessage = $"Error processing files: {ex.Message}. Please check the file format and try again.";
         }
         finally
         {
@@ -235,7 +235,7 @@
         try
         {
             file.Status = "Processing";
-            _progress.UpdateProgress(file.FileName, "Processing");
+            _progress.UpdateProgress(file.FileName, $"Processing {file.FileName}...");
             StateHasChanged();
 
             // Get the file bytes using JavaScript interop
@@ -269,7 +269,7 @@
             suggestedName = string.Join("_", suggestedName.Split(Path.GetInvalidFileNameChars()));
             file.SuggestedName = suggestedName;
             file.Status = "Completed";
-            _progress.UpdateProgress(file.FileName, "Completed");
+            _progress.UpdateProgress(file.FileName, $"Completed processing {file.FileName}.");
             
             var existingFile = DbContext.Files.FirstOrDefault(f => f.FilePath == file.FilePath);
             if (existingFile != null)
@@ -308,11 +308,8 @@
         try
         {
             var newFileName = Path.GetFileNameWithoutExtension(file.SuggestedName) + ".pdf";
-            
-            // In a web context, we'll just update the record
             file.FileName = newFileName;
             file.Status = "Renamed";
-            
             await DbContext.SaveChangesAsync();
         }
         catch (Exception ex)
