@@ -9,9 +9,12 @@
 <div class="file-renamer-container">
     <h1 class="title">PDF File Renamer</h1>
 
-    <div class="controls">
+    <section class="file-selection">
         <label for="filePicker">Select PDF Files:</label>
         <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" disabled="@IsProcessing" />
+    </section>
+
+    <section class="processing-controls">
         <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any() || IsProcessing)">
             @if (IsProcessing)
             {
@@ -22,23 +25,21 @@
                 <span>Process Files</span>
             }
         </button>
-
-        <div class="overall-progress-bar-container" hidden="@(!IsProcessing)">
-            <div class="overall-progress-bar" style="width: @(Files.Count > 0 ? (_processedCount * 100 / Files.Count) : 0)%">
-                @if (IsProcessing)
-                {
-                    <span class="progress-text">@(Files.Count > 0 ? (_processedCount * 100 / Files.Count) : 0)%</span> 
-                }
-            </div>
-        </div>
         @if (IsProcessing)
         {
             <button @onclick="CancelProcessing" class="cancel-button">Cancel</button>
         }
-    </div>
+    </section>
 
-    @if (_progress.IsProcessing)
-    {
+    <section class="progress-display" hidden="@(!IsProcessing)">
+        <div class="overall-progress-bar">
+            <div class="progress-bar" style="width: @(Files.Count > 0 ? (_processedCount * 100 / Files.Count) : 0)%">
+                <span class="progress-text">@(Files.Count > 0 ? (_processedCount * 100 / Files.Count) : 0)%</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="detailed-progress" hidden="@(!_progress.IsProcessing)">
         <div class="progress-container">
             <div class="progress-info">
                 <span>Overall Progress: @Math.Round(_progress.OverallProgress)%</span>
@@ -55,7 +56,7 @@
                 </div>
             </div>
         </div>
-    }
+    </section>
 
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
@@ -65,7 +66,7 @@
         </div>
     }
 
-    <div class="file-table" hidden="@(!Files.Any())">
+    <section class="file-table" hidden="@(!Files.Any())">
         <table>
             <thead>
                 <tr>
@@ -105,7 +106,7 @@
                 }
             </tbody>
         </table>
-    </div>
+    </section>
 
 </div>
 
