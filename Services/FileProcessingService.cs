@@ -86,7 +86,7 @@ public class FileProcessingService : IFileProcessingService
         }
     }
 
-    public async Task ApplyRenameAsync(FileRecord file)
+    public async Task ApplyRenameAsync(FileRecord file, CancellationToken cancellationToken)
     {
         if (file == null) return;
 
@@ -95,7 +95,7 @@ public class FileProcessingService : IFileProcessingService
             var newFileName = Path.GetFileNameWithoutExtension(file.SuggestedName) + ".pdf";
             file.FileName = newFileName;
             file.Status = "Renamed";
-            await _dbContext.SaveChangesAsync(_cts.Token);
+            await _dbContext.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)
         {
