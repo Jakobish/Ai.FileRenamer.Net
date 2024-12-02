@@ -95,7 +95,7 @@ public class FileProcessingService : IFileProcessingService
             var newFileName = Path.GetFileNameWithoutExtension(file.SuggestedName) + ".pdf";
             file.FileName = newFileName;
             file.Status = "Renamed";
-            await _dbContext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync(_cts.Token);
         }
         catch (Exception ex)
         {
