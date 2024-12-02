@@ -11,11 +11,11 @@
 
     <section class="file-selection">
         <label for="filePicker">Select PDF Files:</label>
-        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" disabled="@IsProcessing" />
+        <input type="file" id="filePicker" multiple accept=".pdf" @onchange="OnFilesSelected" disabled="@IsProcessing" title="Select PDF files to rename" />
     </section>
 
     <section class="processing-controls">
-        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any() || IsProcessing)">
+        <button @onclick="ProcessFiles" class="scan-button" disabled="@(!Files.Any() || IsProcessing)" title="Start processing selected files">
             @if (IsProcessing)
             {
                 <span>Processing... (@_processedCount of @Files.Count)</span>
@@ -27,7 +27,7 @@
         </button>
         @if (IsProcessing)
         {
-            <button @onclick="CancelProcessing" class="cancel-button">Cancel</button>
+            <button @onclick="CancelProcessing" class="cancel-button" title="Cancel the ongoing file processing">Cancel</button>
         }
     </section>
 
@@ -60,7 +60,7 @@
 
     @if (!string.IsNullOrEmpty(ErrorMessage))
     {
-        <div class="alert alert-danger">
+        <div class="alert alert-danger" role="alert">
             @ErrorMessage
             <button @onclick="@(() => ErrorMessage = null)" class="close-button">×</button>
         </div>
@@ -99,7 +99,7 @@
                         <td>
                             @if (file.Status == "Completed")
                             {
-                                <button @onclick="() => ApplyRename(file)" class="rename-button">Apply</button>
+                                <button @onclick="() => ApplyRename(file)" class="rename-button" title="Apply the suggested name to this file">Apply</button>
                             }
                         </td>
                     </tr>
