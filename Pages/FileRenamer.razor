@@ -5,9 +5,7 @@
 @inject IPdfService PdfService
 @using FileRenamerProject.Services
 
-
 <PageTitle>PDF File Renamer</PageTitle>
-
 
 <div class="file-renamer-container">
     <h1 class="title">PDF File Renamer</h1>
@@ -120,11 +118,9 @@
             </tbody>
         </table>
     </section>
-
 </div>
 
-@code
-{
+@code {
     private List<FileRenamerProject.Data.FileRecord> Files = new();
     private bool IsProcessing;
     private string? ErrorMessage;
@@ -132,142 +128,77 @@
     private CancellationTokenSource _cts = new();
     private ProgressState _progress = new();
 
-    private async Task OnFilesSelected(ChangeEventArgs e)
-    {
-        try
-        {
+    private async Task OnFilesSelected(ChangeEventArgs e) {
+        try {
             Files.Clear();
             ErrorMessage = null;
             _progress.Reset();
 
             var fileInfos = await JSRuntime.InvokeAsync<IEnumerable<FileInfo>>("getPDFsFromFilePicker");
 
-            if (fileInfos == null)
-            {
+            if (fileInfos == null) {
                 ErrorMessage = "No files selected.";
                 return;
             }
 
-            foreach (var fileInfo in fileInfos)
-            {
-                if (string.IsNullOrWhiteSpace(fileInfo.name) || string.IsNullOrWhiteSpace(fileInfo.path))
-                {
+            foreach (var fileInfo in fileInfos) {
+                if (string.IsNullOrWhiteSpace(fileInfo.name) || string.IsNullOrWhiteSpace(fileInfo.path)) {
                     ErrorMessage = "Invalid file information received.";
                     return;
                 }
 
-                if (!fileInfo.name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-                {
+                if (!fileInfo.name.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) {
                     ErrorMessage = $"File '{fileInfo.name}' is not a PDF file. Only PDF files are supported.";
                     return;
                 }
 
-                Files.Add(new FileRecord
-                    {
-                        Id = Files.Count + 1,
-                        FileName = fileInfo.name,
-                        FilePath = fileInfo.path,
-                        SuggestedName = "",
-                        Status = "Pending"
-                    });
+                Files.Add(new FileRecord {
+                    Id = Files.Count + 1,
+                    FileName = fileInfo.name,
+                    FilePath = fileInfo.path,
+                    SuggestedName = "",
+                    Status = "Pending"
+                });
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             ErrorMessage = $"Error selecting files: {ex.Message}. Please try again.";
             Files.Clear();
         }
     }
 
-    private class FileInfo
-    {
-        public string name { get; set; } = string.Empty;
-        public string path { get; set; } = string.Empty;
-    }
-
-    private async Task ProcessFiles()
-    {
-        if (!Files.Any())
-        {
+    private async Task ProcessFiles() {
+        if (!Files.Any()) {
             ErrorMessage = "No files to process.";
             return;
         }
 
-        try
-        {
+        try {
             IsProcessing = true;
             _processedCount = 0;
             ErrorMessage = null;
 
-            using (_cts = new CancellationTokenSource())
-            {
+            using (_cts = new CancellationTokenSource()) {
                 await FileProcessingService.ProcessFilesAsync(Files, _cts.Token);
             }
 
             _progress.Complete();
-        }
-        catch (OperationCanceledException)
-        {
+        } catch (OperationCanceledException) {
             ErrorMessage = "Operation was cancelled.";
             // Reset status for files that weren't processed
-            foreach (var file in Files.Where(f => f.Status == "Processing"))
-            {
+            foreach (var file in Files.Where(f => f.Status == "Processing")) {
                 file.Status = "Pending";
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             ErrorMessage = $"Error processing files: {ex.Message}. Please check the file format and try again.";
-        }
-        finally
-        {
+        } finally {
             IsProcessing = false;
         }
     }
 
-    private class ProgressState
-    {
-        public bool IsProcessing { get; set; }
-        public double OverallProgress { get; set; }
-        public string CurrentFileName { get; set; } = string.Empty;
-        public string CurrentStatus { get; set; } = string.Empty;
-        public int CurrentBatchProcessed { get; set; }
-        public int CurrentBatchSize { get; set; }
-        public double BatchProgress => CurrentBatchSize > 0 ? (CurrentBatchProcessed * 100.0 / CurrentBatchSize) : 0;
-        public List<string> Messages { get; } = new();
-
-        public void UpdateProgress(string fileName, string status)
-        {
-            CurrentFileName = fileName;
-            CurrentStatus = status;
-            Messages.Add($"{fileName}: {status}");
-        }
-
-        public void Reset()
-        {
-            IsProcessing = false;
-            OverallProgress = 0;
-            CurrentFileName = string.Empty;
-            CurrentStatus = string.Empty;
-            CurrentBatchProcessed = 0;
-            CurrentBatchSize = 0;
-            Messages.Clear();
-        }
-
-        public void Complete()
-        {
-            IsProcessing = false;
-            CurrentStatus = "All files processed.";
-            Messages.Add(CurrentStatus);
-        }
-    }
-
-    private async Task ProcessSingleFile(FileRenamerProject.Data.FileRecord file)
-    {
+    private async Task ProcessSingleFile(FileRenamerProject.Data.FileRecord file) {
         if (file == null) return;
 
-        try
-        {
+        try {
             file.Status = "Processing";
             _progress.UpdateProgress(file.FileName, $"Processing {file.FileName}...");
             StateHasChanged();
@@ -276,8 +207,7 @@
             var fileBytes = await JSRuntime.InvokeAsync<byte[]>("getFileBytes", file.FilePath);
             _cts.Token.ThrowIfCancellationRequested();
 
-            if (fileBytes == null || fileBytes.Length == 0)
-            {
+            if (fileBytes == null || fileBytes.Length == 0) {
                 throw new InvalidOperationException("File is empty or could not be read");
             }
 
@@ -285,8 +215,7 @@
             var content = await PdfService.ExtractTextFromPdfAsync(fileBytes);
             _cts.Token.ThrowIfCancellationRequested();
 
-            if (string.IsNullOrWhiteSpace(content))
-            {
+            if (string.IsNullOrWhiteSpace(content)) {
                 throw new InvalidOperationException("No text could be extracted from the PDF");
             }
 
@@ -294,8 +223,7 @@
             var suggestedName = await PdfService.GetSuggestedNameFromAIAsync(file.FileName, content);
             _cts.Token.ThrowIfCancellationRequested();
 
-            if (string.IsNullOrWhiteSpace(suggestedName))
-            {
+            if (string.IsNullOrWhiteSpace(suggestedName)) {
                 throw new InvalidOperationException("Could not generate a suggested name");
             }
 
@@ -306,45 +234,33 @@
             _progress.UpdateProgress(file.FileName, $"Completed processing {file.FileName}.");
 
             var existingFile = DbContext.Files.FirstOrDefault(f => f.FilePath == file.FilePath);
-            if (existingFile != null)
-            {
+            if (existingFile != null) {
                 DbContext.Entry(existingFile).CurrentValues.SetValues(file);
-            }
-            else
-            {
+            } else {
                 DbContext.Files.Add(file);
             }
 
             _processedCount++;
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             file.Status = "Error";
             file.SuggestedName = ex.Message;
             _progress.UpdateProgress(file.FileName, "Error");
-        }
-        finally
-        {
+        } finally {
             StateHasChanged();
         }
     }
 
-    private Task CancelProcessing()
-    {
+    private Task CancelProcessing() {
         _cts.Cancel();
         return Task.CompletedTask;
     }
 
-    private async Task ApplyRename(FileRenamerProject.Data.FileRecord file)
-    {
+    private async Task ApplyRename(FileRenamerProject.Data.FileRecord file) {
         if (file == null) return;
 
-        try
-        {
+        try {
             await FileProcessingService.ApplyRenameAsync(file);
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             ErrorMessage = $"Error renaming file: {ex.Message}";
             file.Status = "Error";
         }
